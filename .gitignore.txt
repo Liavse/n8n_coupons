@@ -1,0 +1,6 @@
+n8n_data/
+.env
+cloudflared/
+*.exe
+*.sqlite
+*.journal

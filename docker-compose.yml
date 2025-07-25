@@ -1,0 +1,27 @@
+version: "3"
+
+services:
+  n8n:
+    image: n8nio/n8n
+    restart: always
+    ports:
+      - "5678:5678"
+    env_file:
+      - .env
+    volumes:
+      - ./n8n_data:/home/node/.n8n
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:16
+    container_name: postgres_n8n
+    restart: always
+    ports:
+      - "5432:5432" 
+    environment:
+      POSTGRES_USER: n8n
+      POSTGRES_PASSWORD: dsloo101
+      POSTGRES_DB: n8ndb_coupons
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data

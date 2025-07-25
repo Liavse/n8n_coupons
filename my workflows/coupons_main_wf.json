@@ -1,0 +1,902 @@
+{
+  "name": "coupons_main_wf",
+  "nodes": [
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -144,
+        64
+      ],
+      "id": "640c78d8-60ea-4323-ae64-b2a755aaa47e",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "umQejbSkdkbqNpss",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=המשתמש הזין קופון חדש בטקסט חופשי.\n\nהמטרה שלך היא לקרוא את הטקסט ולהפעיל את הפונקציה `add_coupon_to_sheet` עם הפרמטרים הבאים:\n- code: מחרוזת מספרית או טקסט\n- category: מחרוזת שמתארת את התחום (כמו ספורט, אוכל, קופונים לילדים) לרוב נדרש להסיק לבד את התחום. אל תתבלבל עם תיאור ההטבה. \n- expiration: תאריך בפורמט YYYY-MM-DD או \"01/01/1800\"\n- description:תיאור הקופון מתוך הטקסט שהוזן. לדוגמא: \"קופון 34343 סופרלנד\" אז השדה הזה יחזיר סופרלד\n\nהחזר אך ורק JSON תקני שמכיל קריאה לפונקציה עם הפרמטרים האלה – ללא טקסט נוסף.\n\n\nאל תחזיר טקסט נוסף. רק את המבנה הבא:\n{\n  \"coupons\": [ {...}, {...} ]\n}\n\n\nטקסט הקופון יכול להיות זה\n{{ $json.choices[0].message.content }}\nאו זה\n{{ $('Telegram Trigger').item.json.message.text }}\n",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "אתה סוכן קופונים שמנהל טבלה בפוסטגרס. כל הודעה שמכילה קופון – אתה מפענח, מחלץ מידע, ושולח אותו לפונקציה בשם add_coupon_to_sheet עם השדות:\n- code\n- category\n- expiration\n- description\n\nאתה תמיד מחזיר רק קריאה לפונקציה הזו בפורמט JSON. אין טקסט נוסף.\n\nהמטרה שלך היא לנתח הודעה שמכילה קופון אחד או יותר.\n\nלפני שאתה מכניס קופון חדש תבדוק אם קוד הקופון כבר קיים - אם קיים אז תתעלם ואל תרשום JSON עבורו.. אם לא קיים, אז תרשום את הJSON שלו.\nתשתמש בכלי GET_ROWS על מנת לחלץ את כל הרשומות.\nהבדיקה נעשית מול המפתח של השדה code\nיש לבצע השוואה של כל התווים בין הקוד קופון החדש שמוזן לבין הקוד קופון שקיים באקסל. אם כל התווים זהים אסור להכניס את הקופון החדש. אם יש תו אחד שונה תכניס את קוד הקופון\n\nתזהה אם המשתמש הזין כתובת EMAIL תקנית, אם לא תחזיר NO_MAIL"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        -64,
+        -160
+      ],
+      "id": "73f6f202-8019-4fec-894b-821f2db2b9b7",
+      "name": "AI Agent - Coupons",
+      "notesInFlow": false
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "a3a25a39-8269-45a8-b70d-c87c243d9245",
+              "leftValue": "={{ $json.output }}",
+              "rightValue": "=\"coupons\": []",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        352,
+        -160
+      ],
+      "id": "7eb9da85-0d58-4ab6-9a0a-f7b8e597cb9b",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1760,
+        -176
+      ],
+      "id": "46fec2e4-6778-467f-b62f-1130737fcb01",
+      "name": "Telegram Trigger",
+      "webhookId": "76ef7820-d502-49fe-b78f-222d178bf5eb",
+      "credentials": {
+        "telegramApi": {
+          "id": "ZYbx9Z5X70vVx8oO",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "text": "=מדובר בתמונה של קוד קופון. עליך לנתח את התמונה ולחלץ את המידע מתוך הבנה שלך: קוד קופון, הטבה, תוקף הקופון\nאת תשובתך תספק בעברית\nהחזר תשובה בפורמט הבא\nקוד קופון: \nהטבה: (הנחה, שווי שובר, בית העסק, קופון ל וכו')\n(בתוקף עד.. ,תוקף ההטבה..) תוקף:\n\nתקרא את כל הטקסט בתמונה ותנסה להבין היטב מתוך הטקסט בתמונה מהי ההטבה, כלומר למה משתמש הקופון (לדוגמא - קופון ל..., שובר מקנה.., כותרת השובר וכו')\n, תנסה להבין לפי ההיגיון לאיזו קטגוריה לשייך אותו\nחשוב ששם בית העסק יופיע בהטבה",
+        "inputType": "base64",
+        "simplify": false,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        -224,
+        -288
+      ],
+      "id": "b05ef8bb-e7c5-4282-ba3b-004c79ed1833",
+      "name": "OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "umQejbSkdkbqNpss",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "resize",
+        "width": 250,
+        "height": 250,
+        "resizeOption": "percent",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.editImage",
+      "typeVersion": 1,
+      "position": [
+        -384,
+        -288
+      ],
+      "id": "f4c082c4-38c1-4c95-9171-7d7abe321749",
+      "name": "Edit Image"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "=✅ קוד קופון כבר קיים במערכת ולכן לא התווסף",
+        "additionalFields": {}
+      },
+      "id": "e1e3c4be-95c8-47aa-8277-55add602eeb9",
+      "name": "Send Telegram Confirmation EXIST",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [
+        592,
+        -288
+      ],
+      "webhookId": "6a908f98-67c7-4c77-97ea-ea72a486fd5c",
+      "credentials": {
+        "telegramApi": {
+          "id": "ZYbx9Z5X70vVx8oO",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "=קוד קופון {{ $('split_coupons').item.json.code }}\n{{ $('split_coupons').item.json.description }}\nהתווסף למערכת בהצלחה! תהנו!",
+        "additionalFields": {}
+      },
+      "id": "2c85045f-73ba-49a5-a152-684fe8cb5584",
+      "name": "Send Telegram Confirmation ADDED",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [
+        1104,
+        -16
+      ],
+      "webhookId": "6a908f98-67c7-4c77-97ea-ea72a486fd5c",
+      "credentials": {
+        "telegramApi": {
+          "id": "ZYbx9Z5X70vVx8oO",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "coupons",
+          "mode": "list",
+          "cachedResultName": "coupons"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "code": "={{ $('split_coupons').item.json.code }}",
+            "category": "={{ $('split_coupons').item.json.category }}",
+            "expiration_date": "={{ $('split_coupons').item.json.expiration }}",
+            "description": "={{ $('split_coupons').item.json.description }}",
+            "user_id": "={{ $json.id }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "code",
+              "displayName": "code",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "category",
+              "displayName": "category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "expiration_date",
+              "displayName": "expiration_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "description",
+              "displayName": "description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        928,
+        -16
+      ],
+      "id": "652234de-07fd-4b71-920e-f81891eaaac3",
+      "name": "Postgres_supabase",
+      "credentials": {
+        "postgres": {
+          "id": "8otnZlf9E8ujIbGw",
+          "name": "Postgres account supabase coupons"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "value": "public",
+          "mode": "list",
+          "cachedResultName": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "coupons",
+          "mode": "list",
+          "cachedResultName": "coupons"
+        },
+        "returnAll": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        192,
+        48
+      ],
+      "id": "8cb577e0-0eb0-4291-8c48-7509efe542cd",
+      "name": "get_rows_supabase",
+      "credentials": {
+        "postgres": {
+          "id": "8otnZlf9E8ujIbGw",
+          "name": "Postgres account supabase coupons"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "language": "python",
+        "pythonCode": "import json\n\n# קלט הוא מחרוזת טקסט – JSON בפורמט string\nraw = items[0][\"json\"][\"output\"]  \n\n# נמיר למבנה Python\nparsed = json.loads(raw)\n\n# נשלוף את הקופונים\ncoupons = parsed.get(\"coupons\")\n\n# נחזיר כל קופון כאייטם נפרד\nreturn [{\"json\": coupon} for coupon in coupons]"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        592,
+        -16
+      ],
+      "id": "4e2c153a-22e5-44d1-90ca-b92cbefce5e0",
+      "name": "split_coupons"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select id from public.profiles where telegram_id='{{ $('Telegram Trigger').item.json.message.from.id }}'",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        752,
+        -16
+      ],
+      "id": "b7d6ddd8-db51-4d68-ac92-8f4e3f684fd7",
+      "name": "find_app_user",
+      "credentials": {
+        "postgres": {
+          "id": "8otnZlf9E8ujIbGw",
+          "name": "Postgres account supabase coupons"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "telegram_bot_log",
+          "mode": "list",
+          "cachedResultName": "telegram_bot_log"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "file_size": "={{ $('Telegram Trigger').item.json.message.document.file_size }}",
+            "created_at": "={{ $now }}",
+            "first_name": "={{ $('Telegram Trigger').item.json.message.chat.first_name }}",
+            "last_name": "={{ $('Telegram Trigger').item.json.message.chat.last_name }}",
+            "text": "={{ $('Telegram Trigger').item.json.message.text }}",
+            "telegram_id": "={{ $('Telegram Trigger').item.json.message.from.id }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "telegram_id",
+              "displayName": "telegram_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "text",
+              "displayName": "text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "first_name",
+              "displayName": "first_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "last_name",
+              "displayName": "last_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "file_size",
+              "displayName": "file_size",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -1600,
+        -336
+      ],
+      "id": "94d3c471-4c4c-4499-ab77-ecb635d4c455",
+      "name": "log",
+      "credentials": {
+        "postgres": {
+          "id": "8otnZlf9E8ujIbGw",
+          "name": "Postgres account supabase coupons"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "x67BFqOPHWRCZKTc",
+          "mode": "list",
+          "cachedResultName": "check_abuse"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "text_cnt": "={{ $json.text_cnt }}",
+            "telegram_id": "={{ $('Telegram Trigger').item.json.message.from.id }}",
+            "max_txt_len": "={{ $json.max_txt_len }}",
+            "max_file_size": "={{ $json.max_file_size }}",
+            "max_usr_amt": "={{ $json.max_usr_amt }}",
+            "usr_msg_cnt": "={{ $json.usr_msg_cnt }}",
+            "file_size": "={{ $('Telegram Trigger').item.json.message.photo[3].file_size }}",
+            "text_or_photo": "={{ $json.text_or_photo }}"
+          },
+          "matchingColumns": [
+            "text"
+          ],
+          "schema": [
+            {
+              "id": "text_cnt",
+              "displayName": "text_cnt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "telegram_id",
+              "displayName": "telegram_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "max_txt_len",
+              "displayName": "max_txt_len",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "max_usr_amt",
+              "displayName": "max_usr_amt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "max_file_size",
+              "displayName": "max_file_size",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "usr_msg_cnt",
+              "displayName": "usr_msg_cnt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "file_size",
+              "displayName": "file_size",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "text_or_photo",
+              "displayName": "text_or_photo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "boolean",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": true,
+          "convertFieldsToString": true
+        },
+        "mode": "each",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        -1040,
+        -176
+      ],
+      "id": "9f626d03-0bb8-4093-8432-7b8a89b5c6b0",
+      "name": "Check_Abuse"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $('Telegram Trigger').item.json.message.photo }}",
+              "operation": "isNotEmpty"
+            }
+          ]
+        }
+      },
+      "id": "8440314e-1257-4f16-9937-c0390f9195db",
+      "name": "Check if Photo",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -848,
+        -176
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT  COUNT(*) as message_cnt\nFROM public.telegram_bot_log\nWHERE telegram_id = '{{ $('Telegram Trigger').item.json.message.from.id }}'\nAND created_at > NOW() - INTERVAL '24 hour';",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -1408,
+        -336
+      ],
+      "id": "c470d062-4b24-4d71-8ee6-3a1252a7894d",
+      "name": "message_count",
+      "credentials": {
+        "postgres": {
+          "id": "8otnZlf9E8ujIbGw",
+          "name": "Postgres account supabase coupons"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "18b98cee-eeba-431e-bc3c-ef8b9f4e82ba",
+              "name": "text_cnt",
+              "value": "={{ $('Telegram Trigger').item.json.message.text ? $('Telegram Trigger').item.json.message.text.length : 0}}",
+              "type": "number"
+            },
+            {
+              "id": "88f037c5-44d3-472e-8bb0-26ff634dae1b",
+              "name": "max_txt_len",
+              "value": 500,
+              "type": "number"
+            },
+            {
+              "id": "3bd54e92-5bd9-4edd-b339-a6e0fd25b649",
+              "name": "max_usr_amt",
+              "value": 50,
+              "type": "number"
+            },
+            {
+              "id": "f98f640c-f6a6-4886-8a51-2a7f0b93c5c9",
+              "name": "max_file_size",
+              "value": 1048576,
+              "type": "number"
+            },
+            {
+              "id": "034fbb22-4f98-47bf-b353-1777cbcf74fb",
+              "name": "usr_msg_cnt",
+              "value": "={{ $json.message_cnt }}",
+              "type": "number"
+            },
+            {
+              "id": "81d5f42c-0803-45a8-943f-a4101b38b88a",
+              "name": "file_size",
+              "value": "={{ $json.message.photo[3].file_size}}",
+              "type": "number"
+            },
+            {
+              "id": "9de7f9cc-71d9-435c-9fa6-1d576c603854",
+              "name": "text_or_photo",
+              "value": "={{!! $('Telegram Trigger').item.json.message.photo || !!$('Telegram Trigger').item.json.message.text }}",
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1248,
+        -176
+      ],
+      "id": "3f54a83c-f67d-4d88-bac7-d317b01994ab",
+      "name": "Edit Fields and Params",
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $('Telegram Trigger').item.json.message.photo[3].file_id }}"
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -560,
+        -288
+      ],
+      "id": "c96a17c0-e745-4158-878f-d1b600ff8be5",
+      "name": "Get a file",
+      "webhookId": "ce31274c-1677-46bd-8e51-8e0eab61fd62",
+      "credentials": {
+        "telegramApi": {
+          "id": "ZYbx9Z5X70vVx8oO",
+          "name": "Telegram account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent - Coupons",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent - Coupons": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Send Telegram Confirmation EXIST",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "split_coupons",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Image": {
+      "main": [
+        [
+          {
+            "node": "OpenAI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI": {
+      "main": [
+        [
+          {
+            "node": "AI Agent - Coupons",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres_supabase": {
+      "main": [
+        [
+          {
+            "node": "Send Telegram Confirmation ADDED",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get_rows_supabase": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent - Coupons",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "split_coupons": {
+      "main": [
+        [
+          {
+            "node": "find_app_user",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "find_app_user": {
+      "main": [
+        [
+          {
+            "node": "Postgres_supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check_Abuse": {
+      "main": [
+        [
+          {
+            "node": "Check if Photo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check if Photo": {
+      "main": [
+        [
+          {
+            "node": "Get a file",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Agent - Coupons",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "log": {
+      "main": [
+        [
+          {
+            "node": "message_count",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "message_count": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields and Params",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields and Params": {
+      "main": [
+        [
+          {
+            "node": "Check_Abuse",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a file": {
+      "main": [
+        [
+          {
+            "node": "Edit Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "c7fc7a63-2829-4c4c-9e2b-63d0cb0733aa",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "837193610e8fb2cccb1b0704f018cdb99aafccb9896fda4af84882860c8e11e9"
+  },
+  "id": "BFZJBauOyRr7An2R",
+  "tags": []
+}
