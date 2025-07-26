@@ -19,9 +19,7 @@ services:
     restart: always
     ports:
       - "5432:5432" 
-    environment:
-      POSTGRES_USER: n8n
-      POSTGRES_PASSWORD: dsloo101
-      POSTGRES_DB: n8ndb_coupons
+    env_file:
+      - .env
     volumes:
       - ./postgres_data:/var/lib/postgresql/data
