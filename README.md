@@ -30,7 +30,7 @@ To solve this problem, I built an AI-powered Telegram assistant that stores, org
 ## 🚀 Quick Start
 ### 1. Clone the repository
 ```bash
-git clone https://github.com/<your-username>/n8n_coupons.git
+git clone https://github.com/Liavse/n8n_coupons.git
 cd n8n_coupons
 ```
 
