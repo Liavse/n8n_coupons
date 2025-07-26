@@ -90,16 +90,11 @@ Update the `.env` `WEBHOOK_URL` with the ngrok HTTPS address.
 └── .gitignore
 ```
 
-## 🔐 Security Notes
-- Do **not** push `.env` or `n8n_data` to GitHub.
-- Use `.gitignore` to avoid uploading sensitive files.
-- Consider adding encryption for database credentials and tokens.
-
 ## 🧪 Future Enhancements
 - Add Telegram commands (e.g., `/search`, `/list`)
-- Expiration reminders
+- Expiration reminders directly to calendar 
 - Tagging by source (Behatsdaa / Haver / etc.)
-- Automatic backup
+- Add coupons photos
 
 ## 💰 Cost Estimate
 > Running GPT-4o mini for this use case costs less than **$1/month**, thanks to minimal token usage.
